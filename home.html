@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Bản đồ địa giới hành chính cấp xã Thành phố Hà Nội 2025</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; height: 100%; font-family: Roboto, sans-serif; }
+    #container { display: grid; grid-template-columns: 3fr 9fr; height: 100%; }
+    #sidebar { display: flex; flex-direction: column; border-right: 1px solid #ccc; padding: 10px; box-sizing: border-box; overflow: hidden; }
+    #sidebar h1 { color: red; font-size: 20px; text-align: center; }
+    #search-container { position: relative; margin-bottom: 5px; }
+    #search-container input { width: 100%; padding: 4px 24px 4px 24px; }
+    #search-icon { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #999; }
+    #clear-search { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #999; cursor: pointer; }
+    #data-list { flex: 1; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; }
+    #data-list div { padding: 6px 8px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+    #data-list div:hover { background: #f5f5f5; }
+    #data-list div.active { font-weight: bold; color: red; background: #ffe6e6; }
+    #footer { font-size: 13px; color: red; text-align: left; padding: 4px; border-top: 1px solid #ccc; background: #fafafa; position: sticky; bottom: 0; }
+    #footer ul { padding-left: 20px; margin: 0; }
+    #footer li { list-style-type: disc; }
+    #map { width: 100%; height: 100%; position: relative; }
+    #opacity-slider { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 1000; }
+    #opacity-slider input { writing-mode: vertical-lr; -webkit-appearance: slider-vertical; height: 150px; rotate: 180deg; }
+    #coord { position: absolute; bottom: 10px; right: 10px; background: rgba(255,255,255,0.7); padding: 2px 5px; font-size: 10px; z-index: 1000; }
+    .custom-popup { max-height: 200px; overflow-y: auto; font-size: 12px; line-height: 1.4; }
+    .custom-popup table { width: 100%; border-collapse: separate; border-spacing: 6px 4px; }
+    .custom-popup td { padding: 4px 6px; vertical-align: top; }
+    .custom-popup tr:nth-child(even) { background: #f9f9f9; border-radius: 4px; }
+    .custom-popup tr td:first-child { font-weight: bold; color: #333; width: 40%; text-align: left; padding-right: 8px; }
+    .custom-popup tr td:last-child { text-align: left; color: #555; }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="data/rg_phuongxa_hanoi_simplify_2.js"></script>
+</head>
+<body>
+  <div id="container">
+    <div id="sidebar">
+      <h1>BẢN ĐỒ PHƯƠNG ÁN SẮP XẾP ĐVHC CẤP XÃ THÀNH PHỐ HÀ NỘI NĂM 2025</h1>
+      <div id="search-container">
+        <span id="search-icon">🔍</span>
+        <input type="text" id="search" placeholder="Tìm theo tên...">
+        <span id="clear-search">✖</span>
+      </div>
+      <div id="data-list"></div>
+      <div id="footer">
+        Bản đồ có giá trị tham khảo, dữ liệu được thu thập dựa theo các nguồn:
+        <ul>
+          <li><a href="https://sapnhap.bando.com.vn/" target="_blank">https://sapnhap.bando.com.vn</a></li>
+          <li><a href="https://ttpvhcc.hanoi.gov.vn/tien-ich-cong-dan/ha-noi-cong-bo-ban-do-126-xa-phuong-moi-2850250701113211895.htm" target="_blank">https://ttpvhcc.hanoi.gov.vn</a></li>
+          <li><a href="https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/danh-sach-3321-xa-phuong-dac-khu-chinh-thuc-cua-34-tinh-thanh-viet-nam-tra-cuu-3321-xa-phuong-dac-k-726625-221776.html" target="_blank">https://thuvienphapluat.vn</a></li>
+        </ul>
+      </div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <div id="opacity-slider">
+    <input type="range" min="0" max="1" step="0.01" value="1" id="opacityRange">
+  </div>
+  <div id="coord"></div>
+
+  <script>
+    const map = L.map('map', { zoomControl: true }).setView([21.0285, 105.8542], 10);
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    const sat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'] });
+
+    const x0 = 11720245.695358703;
+    const y0 = 2438003.487687048;
+    const dx = 12.66720370081404;
+    const dy = -12.667861697866311;
+    const width = 6466; // Cập nhật kích thước ảnh thực tế (pixel)
+    const height = 7750;
+    const minX = x0;
+    const maxY = y0;
+    const maxX = x0 + dx * width;
+    const minY = y0 + dy * height;
+
+    const southWest = L.CRS.EPSG3857.unproject(L.point(minX, minY));
+    const northEast = L.CRS.EPSG3857.unproject(L.point(maxX, maxY));
+
+    const imageOverlay = L.imageOverlay('data/hcpxhn_new_3.png', [southWest, northEast], { opacity: 1 }).addTo(map);
+
+    const geojsonLayer = L.geoJSON(json_rg_phuongxa_hanoi_simplify_2, {
+      style: { color: 'black', weight: 1 },
+      onEachFeature: (feature, layer) => {
+        layer.on('click', e => {
+          highlightFeature(layer, feature.properties.ten);
+          scrollToSidebarItem(feature.properties.ten);
+          clearSearch();
+          const props = feature.properties;
+          const popupContent = `<div class='custom-popup'>
+            <table>
+                <tr><td>Mã xã</td><td>${props.maxa || ''}</td></tr>
+                <tr><td>Tên xã</td><td>${props.ten || ''}</td></tr>
+                <tr><td>Mã Thành phố</td><td>${props.matp || ''}</td></tr>
+                <tr><td>Tỉnh</td><td>${props.tinhtp || ''}</td></tr>
+                <tr><td>Dân số</td><td>${props.dan_so || ''}</td></tr>
+                <tr><td>Diện tích</td><td>${props.dien_tich || ''}</td></tr>
+                <tr><td>Trung tâm hành chính</td><td>${props.trung_tam_hc || ''}</td></tr>
+                <tr><td>Sát nhập từ</td><td>${props.sat_nhap_tu || ''}</td></tr>
+            </table>
+            </div>`;
+          layer.bindPopup(popupContent).openPopup();
+          if(window.highlightMarker){ map.removeLayer(window.highlightMarker); }
+          window.highlightMarker = L.marker(e.latlng).addTo(map);
+          map.fitBounds(layer.getBounds(), { maxZoom: 15 });
+          const popup = L.popup({ offset: L.point(0, -20) })
+            .setLatLng(e.latlng)
+            .setContent(popupContent)
+            .openOn(map);
+        });
+      }
+    }).addTo(map);
+
+    L.control.layers({ "OpenStreetMap": osm, "Satellite": sat }, { "Ảnh PNG": imageOverlay, "GeoJSON": geojsonLayer }).addTo(map);
+
+    document.getElementById('opacityRange').addEventListener('input', e => {
+      imageOverlay.setOpacity(parseFloat(e.target.value));
+    });
+
+    map.on('mousemove', e => {
+      document.getElementById('coord').innerText = `Lat: ${e.latlng.lat.toFixed(5)}, Lng: ${e.latlng.lng.toFixed(5)}`;
+    });
+
+    const dataList = document.getElementById('data-list');
+    json_rg_phuongxa_hanoi_simplify_2.features.forEach(f => {
+      const div = document.createElement('div');
+      div.innerText = f.properties.ten;
+      div.addEventListener('click', () => {
+        const layer = geojsonLayer.getLayers().find(l => l.feature.properties.ten === f.properties.ten);
+        if(layer){
+          map.fitBounds(layer.getBounds(), { maxZoom: 15 });
+          highlightFeature(layer, f.properties.ten);
+          const props = f.properties;
+          const popupContent = `<div class='custom-popup'>
+            <table>
+                <tr><td>Mã xã</td><td>${props.maxa || ''}</td></tr>
+                <tr><td>Tên xã</td><td>${props.ten || ''}</td></tr>
+                <tr><td>Mã Thành phố</td><td>${props.matp || ''}</td></tr>
+                <tr><td>Tỉnh</td><td>${props.tinhtp || ''}</td></tr>
+                <tr><td>Dân số</td><td>${props.dan_so || ''}</td></tr>
+                <tr><td>Diện tích</td><td>${props.dien_tich || ''}</td></tr>
+                <tr><td>Trung tâm hành chính</td><td>${props.trung_tam_hc || ''}</td></tr>
+                <tr><td>Sát nhập từ</td><td>${props.sat_nhap_tu || ''}</td></tr>
+            </table>
+            </div>`;
+          layer.bindPopup(popupContent).openPopup();
+          const popup = L.popup({ offset: L.point(0, -20) })
+            .setLatLng(e.latlng)
+            .setContent(popupContent)
+            .openOn(map);
+          clearSearch();
+        }
+      });
+      dataList.appendChild(div);
+    });
+
+    const searchInput = document.getElementById('search');
+    const clearBtn = document.getElementById('clear-search');
+
+    searchInput.addEventListener('input', e => {
+      const val = e.target.value.toLowerCase();
+      [...dataList.children].forEach(div => {
+        div.style.display = div.innerText.toLowerCase().includes(val) ? '' : 'none';
+      });
+    });
+
+    clearBtn.addEventListener('click', () => { clearSearch(); });
+
+    function clearSearch(){
+      searchInput.value = '';
+      [...dataList.children].forEach(div => div.style.display = '');
+    }
+
+    function highlightFeature(layer, ten){
+      geojsonLayer.eachLayer(l => l.setStyle({ color: 'black', weight: 1 }));
+      layer.setStyle({ color: 'red', weight: 4 });
+      document.querySelectorAll('#data-list div').forEach(div => {
+        div.classList.toggle('active', div.innerText === ten);
+      });
+    }
+
+    function scrollToSidebarItem(ten) {
+      const items = document.querySelectorAll('#data-list div');
+      items.forEach(div => {
+        if (div.innerText === ten) {
+          div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+  </script>
+</body>
+</html>
