@@ -176,8 +176,8 @@
     }
 
     function highlightFeature(layer, ten){
-      geojsonLayer.eachLayer(l => l.setStyle({ color: 'black', weight: 1 }));
-      layer.setStyle({ color: 'red', weight: 4 });
+      geojsonLayer.eachLayer(l => l.setStyle({ color: 'black', weight: 0.5 }));
+      layer.setStyle({ color: 'red', weight: 5 });
       document.querySelectorAll('#data-list div').forEach(div => {
         div.classList.toggle('active', div.innerText === ten);
       });
