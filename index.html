@@ -24,7 +24,13 @@
     #opacity-slider { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 1000; }
     #opacity-slider input { writing-mode: vertical-lr; -webkit-appearance: slider-vertical; height: 150px; rotate: 180deg; }
     #coord { position: absolute; bottom: 10px; right: 10px; background: rgba(255,255,255,0.7); padding: 2px 5px; font-size: 10px; z-index: 1000; }
-    .custom-popup { max-height: 200px; overflow-y: auto; font-size: 12px; line-height: 1.4; }
+            /* Tăng kích thước nút layer control */
+            .leaflet-control-layers {
+      transform: scale(1.2);
+      transform-origin: top left;
+      right: 15px;
+    }
+    .custom-popup { max-height: 300px; overflow-y: auto; font-size: 12px; line-height: 1.4; }
     .custom-popup table { width: 100%; border-collapse: separate; border-spacing: 6px 4px; }
     .custom-popup td { padding: 4px 6px; vertical-align: top; }
     .custom-popup tr:nth-child(even) { background: #f9f9f9; border-radius: 4px; }
@@ -51,6 +57,7 @@
           <li><a href="https://sapnhap.bando.com.vn/" target="_blank">https://sapnhap.bando.com.vn</a></li>
           <li><a href="https://ttpvhcc.hanoi.gov.vn/tien-ich-cong-dan/ha-noi-cong-bo-ban-do-126-xa-phuong-moi-2850250701113211895.htm" target="_blank">https://ttpvhcc.hanoi.gov.vn</a></li>
           <li><a href="https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/danh-sach-3321-xa-phuong-dac-khu-chinh-thuc-cua-34-tinh-thanh-viet-nam-tra-cuu-3321-xa-phuong-dac-k-726625-221776.html" target="_blank">https://thuvienphapluat.vn</a></li>
+          <br><a style="position: absolute; color: black; right: 10px;">© 2025 DatTA</a><br>
         </ul>
       </div>
     </div>
@@ -97,9 +104,9 @@
                 <tr><td>Tên xã</td><td>${props.ten || ''}</td></tr>
                 <tr><td>Mã Thành phố</td><td>${props.matp || ''}</td></tr>
                 <tr><td>Tỉnh</td><td>${props.tinhtp || ''}</td></tr>
-                <tr><td>Dân số</td><td>${props.dan_so || ''}</td></tr>
-                <tr><td>Diện tích</td><td>${props.dien_tich || ''}</td></tr>
-                <tr><td>Trung tâm hành chính</td><td>${props.trung_tam_hc || ''}</td></tr>
+                <tr><td>Dân số (Người)</td><td>${props.dan_so || ''}</td></tr>
+                <tr><td>Diện tích (Km²)</td><td>${props.dien_tich || ''}</td></tr>
+                <tr><td>Trụ sở hành chính</td><td>${props.trung_tam_hc || ''}</td></tr>
                 <tr><td>Sát nhập từ</td><td>${props.sat_nhap_tu || ''}</td></tr>
             </table>
             </div>`;
@@ -143,7 +150,7 @@
                 <tr><td>Tỉnh</td><td>${props.tinhtp || ''}</td></tr>
                 <tr><td>Dân số</td><td>${props.dan_so || ''}</td></tr>
                 <tr><td>Diện tích</td><td>${props.dien_tich || ''}</td></tr>
-                <tr><td>Trung tâm hành chính</td><td>${props.trung_tam_hc || ''}</td></tr>
+                <tr><td>Trụ sở hành chính</td><td>${props.trung_tam_hc || ''}</td></tr>
                 <tr><td>Sát nhập từ</td><td>${props.sat_nhap_tu || ''}</td></tr>
             </table>
             </div>`;
